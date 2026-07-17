@@ -1,0 +1,2 @@
+import type {Job,Preferences} from '../types.js'; const senior=/\b(senior|lead|principal|staff|manager|architect)\b/i; const years=/(?:[5-9]|[1-9]\d)\+?\s*years?/i;
+export const rejectionReason=(j:Job,p:Preferences)=>!/^https:\/\//.test(j.jobUrl)?'Invalid job URL':p.rejectSeniorRoles&&senior.test(j.title)?'Senior role':years.test(j.description)?'Experience requirement exceeds four years':!p.roles.some(r=>j.title.toLowerCase().includes(r.toLowerCase().replace('junior ','')))?'Unrelated role':undefined;

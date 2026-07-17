@@ -1,0 +1,1 @@
+import type {Job} from '../types.js'; export const normalizeJob=(job:Job):Job=>({...job,title:job.title.trim(),company:job.company.trim(),location:job.location.trim(),jobUrl:job.jobUrl.trim(),description:job.description.replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim()});

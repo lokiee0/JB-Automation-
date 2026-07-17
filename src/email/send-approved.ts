@@ -1,0 +1,9 @@
+import '../env.js'; import {mkdir,writeFile} from 'node:fs/promises';
+import {preferences} from '../config.js';
+import {log,redactSecret} from '../logger.js';
+import {readApps,writeApps} from '../storage/application-store.js';
+import {sendingTool,toolsFor,validateSendTool} from './hostinger-mcp-client.js';
+import {validPublicRecruitmentEmail} from './validate-recipient.js';
+
+const main=async()=>{const p=await preferences(),approved=await readApps('approved'),history=await readApps('history'),today=new Date().toISOString().slice(0,10);let sent=0,skipped=0;const eligible=approved.filter(a=>a.approved&&!a.sent&&a.applicationMethod==='email'&&validPublicRecruitmentEmail(a.recipient));const daily=history.filter(a=>a.sentAt?.startsWith(today)).length;const {client,tools}=await toolsFor();const tool=sendingTool(tools);if(!tool)throw new Error('No Hostinger send-email tool found; run npm run mcp:inspect and configure mapping.');validateSendTool(tool);for(const a of eligible){if(sent+daily>=p.maximumApplicationsPerRun||approved.some(x=>x!==a&&x.sentAt?.startsWith(today)&&x.recipient===a.recipient)){skipped++;continue}try{const result=await client.callTool({name:tool.name,arguments:{to:a.recipient,subject:a.subject,body:a.body,attachments:[a.resumePath]}});a.sent=true;a.sentAt=new Date().toISOString();a.mcpMessageId=(result.structuredContent as {messageId?:string}|undefined)?.messageId;history.push(a);sent++}catch(e){log('send_failed',{id:a.id,error:redactSecret(String(e))})}}await client.close();await writeApps('approved',approved);await writeApps('history',history);await mkdir('reports',{recursive:true});await writeFile('reports/send-report.md',`# Send report\n\n- Attempted: ${eligible.length}\n- Sent: ${sent}\n- Skipped: ${skipped}\n- Failures: ${eligible.length-sent-skipped}\n`)};
+main().catch(e=>{console.error(redactSecret(String(e)));process.exitCode=1});

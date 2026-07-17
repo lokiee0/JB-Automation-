@@ -1,0 +1,22 @@
+name: Discover Job Openings
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "30 3 * * 1-5"
+permissions: {contents: read}
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: "22", cache: npm}
+      - run: npm ci
+      - run: npm run discover
+        env: {OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pending-job-applications
+          path: |
+            data/pending-applications.json
+            reports/job-report.md

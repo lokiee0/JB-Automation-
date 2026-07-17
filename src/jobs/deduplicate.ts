@@ -1,0 +1,1 @@
+import {createHash} from 'node:crypto'; import type {Application,Job} from '../types.js'; export const applicationId=(j:Job)=>createHash('sha256').update([j.company,j.title,j.jobUrl,j.applicationEmail||''].join('|').toLowerCase()).digest('hex').slice(0,24); export const isDuplicate=(j:Job,apps:Application[])=>apps.some(a=>a.id===applicationId(j)||a.jobUrl===j.jobUrl);
